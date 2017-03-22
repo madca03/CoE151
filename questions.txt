@@ -1,0 +1,5 @@
+what's the use of setblocking(false)?
+why set threads as daemon?
+why create custom thread class?
+how to quit?
+  - peer_1 sends a quit signal to peer_2, peer_2 receives it then peer_2 will send a quit signal to peer_2 and then terminate. peer_1 receives the quit sig
