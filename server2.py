@@ -11,7 +11,7 @@ class Server:
         self.address = address
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.setblocking(0)
+        # self.server_socket.setblocking(0)
         self.input_sockets = [self.server_socket]
         self.output_sockets = []
         self.msg_queues = {}
@@ -37,7 +37,7 @@ class Server:
     def accept_connection(self):
         client_socket, client_address = self.server_socket.accept()
         print('new connection from', client_address)
-        client_socket.setblocking(0)
+        # client_socket.setblocking(0)
         self.input_sockets.append(client_socket)
         self.output_sockets.append(client_socket)
         self.msg_queues[client_socket] = queue.Queue()
@@ -190,7 +190,6 @@ while sock.has_inputs():
 
             else:
                 # Interpret empty result as closed connection
-                print('here')
                 sock.remove_client(s)
 
     # Handle outputs
