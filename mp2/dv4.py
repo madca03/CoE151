@@ -37,12 +37,23 @@ def message_reader(thread_stop):
           neighbor_dest_node_port = int(neighbor_dest_node_port)
           neighbor_table [neighbor] [neighbor_dest_node] = {'ip': neighbor_dest_node_ip , 'port': neighbor_dest_node_port , 'cost': neighbor_dest_node_cost }
 
+          if neighbor == neighbor_dest_node:
+            if neighbor_dest_node_cost > 0:
+              forwarding_table[neighbor]['cost'] = inf_cost
+              forwarding_table[neighbor]['holddown'] = 5
+
           # add new node to forwarding table if it doesn't exist
           if not (neighbor_dest_node in forwarding_table):
             forwarding_table[neighbor_dest_node] = {'ip': neighbor_ip, 'port': neighbor_port, 'cost': (forwarding_table[neighbor]['cost'] + neighbor_dest_node_cost), 'holddown': 0 }
 
 
+
+
       for dest_node in forwarding_table.keys():
+        # if in holddown, don't update
+        if forwarding_table[dest_node]['holddown'] > 0:
+          continue
+
         # destination node is itself so ignore
         if dest_node == host_addr:
           continue
@@ -60,7 +71,6 @@ def message_reader(thread_stop):
 
             # check for self link cost change on neighbor nodes
             if neighbor_table[neigh_addr][neigh_addr]['cost'] > 0: # if the self link cost becomes greater than zero, then that neighbor advertises infinity
-              
               local_cost = neighbor_table[neigh_addr][neigh_addr]['cost']
             else: # if link cost to node is zero, use the local link cost generated from config file
               local_cost = local_table[i]['cost']
@@ -76,6 +86,12 @@ def message_reader(thread_stop):
         forwarding_table[dest_node]['ip'] = local_table[neigh_index]['ip']
         forwarding_table[dest_node]['port'] = local_table[neigh_index]['port']
         forwarding_table[dest_node]['cost'] = dcost
+
+      # print("host's table ({}:{})".format(host_ip, host_port))
+      # for key, value in forwarding_table.items():
+      #   print(key,value)
+      # print('\n')
+
     except:
       pass
 
@@ -181,6 +197,11 @@ while True:
     for key, value in forwarding_table.items():
       print(key,value)
     print('\n')
+
+    # decrement hold down counter if any every broadcast
+    for key in forwarding_table.keys():
+      if forwarding_table[key]['holddown'] > 0:
+        forwarding_table[key]['holddown'] = forwarding_table[key]['holddown'] - 1
 
     for entry in local_table:
       if (entry['ip'] == host_ip) and (entry['port'] == host_port):
