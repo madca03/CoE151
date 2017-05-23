@@ -149,7 +149,7 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.setblocking(False)
 
 try:
-  host_ip = get_ip_address('wlo1', sock)
+  host_ip = get_ip_address('eno1', sock)
 except IOError:
   host_ip = '127.0.0.1'
 
@@ -176,7 +176,7 @@ message_reader_stop = Queue.Queue()
 reader_thread = threading.Thread(target=message_reader,args=(message_reader_stop,))
 reader_thread.start()
 
-inf_cost = 100
+inf_cost = 500
 sleep_time = 2
 hold_down_timer = 0
 
