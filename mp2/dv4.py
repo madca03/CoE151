@@ -37,8 +37,9 @@ def message_reader(thread_stop):
           neighbor_dest_node_port = int(neighbor_dest_node_port)
           neighbor_table [neighbor] [neighbor_dest_node] = {'ip': neighbor_dest_node_ip , 'port': neighbor_dest_node_port , 'cost': neighbor_dest_node_cost }
 
+          # add new node to forwarding table if it doesn't exist
           if not (neighbor_dest_node in forwarding_table):
-            forwarding_table[neighbor_dest_node] = {'ip': neighbor_ip, 'port': neighbor_port, 'cost': (forwarding_table[neighbor]['cost'] + neighbor_dest_node_cost) }
+            forwarding_table[neighbor_dest_node] = {'ip': neighbor_ip, 'port': neighbor_port, 'cost': (forwarding_table[neighbor]['cost'] + neighbor_dest_node_cost), 'holddown': 0 }
 
 
       for dest_node in forwarding_table.keys():
@@ -50,15 +51,16 @@ def message_reader(thread_stop):
         old_dcost = inf_cost
         neigh_index = 0
 
-        for i in range(len(local_table)):
+        for i in range(len(local_table)): # loop through all neighbors
           neigh_addr =  local_table[i]['ip'] + ':' + str(local_table[i]['port'])
 
           # local_table[i]['ip'] + ':' + str(local_table['port']) -> neighbor node
           # dest_node -> actual destination node
-          if neigh_addr in neighbor_table:  # check if a neighbor has sent a forwarding table or the neigh_addr points to host
+          if neigh_addr in neighbor_table:  # check if a neighbor has been up and has sent a forwarding table or the neigh_addr points to host
 
             # check for self link cost change on neighbor nodes
-            if neighbor_table[neigh_addr][neigh_addr]['cost'] > 0:
+            if neighbor_table[neigh_addr][neigh_addr]['cost'] > 0: # if the self link cost becomes greater than zero, then that neighbor advertises infinity
+              
               local_cost = neighbor_table[neigh_addr][neigh_addr]['cost']
             else: # if link cost to node is zero, use the local link cost generated from config file
               local_cost = local_table[i]['cost']
@@ -113,8 +115,8 @@ host_port = int(sys.argv[2])
 # ]
 local_table = []
 
-# {'ip:port' (dest): {'ip' (neigh): __ , 'port' (neigh): __ , 'cost' (host-to-dest): },
-#  'ip:port' (dest): {'ip' (neigh): __ , 'port' (neigh): __ , 'cost' (host-to-dest): },
+# {'ip:port' (dest): {'ip' (neigh): __ , 'port' (neigh): __ , 'cost' (host-to-dest): __ , 'holddown': 0 },
+#  'ip:port' (dest): {'ip' (neigh): __ , 'port' (neigh): __ , 'cost' (host-to-dest): __ , 'holddown': 0 },
 # }
 forwarding_table = {}
 
@@ -138,7 +140,7 @@ except IOError:
 host_addr = host_ip + ':' + str(host_port)
 
 local_table.append({'ip': host_ip, 'port': host_port, 'cost': 0})
-forwarding_table [ host_ip + ':' + str(host_port) ] = { 'ip': host_ip, 'port': host_port, 'cost': 0 }
+forwarding_table [ host_ip + ':' + str(host_port) ] = { 'ip': host_ip, 'port': host_port, 'cost': 0, 'holddown': 0 }
 
 # http://stackoverflow.com/questions/8009882/how-to-read-large-file-line-by-line-in-python
 with open(sys.argv[1]) as f:
@@ -147,7 +149,7 @@ with open(sys.argv[1]) as f:
     neighbor_port = int(neighbor_port)
     neighbor_cost = int(neighbor_cost)
     local_table.append( {'ip': neighbor_ip, 'port': neighbor_port, 'cost': neighbor_cost } )
-    forwarding_table[ neighbor_ip + ':' + str(neighbor_port) ] = { 'ip': neighbor_ip, 'port': neighbor_port, 'cost': neighbor_cost }
+    forwarding_table[ neighbor_ip + ':' + str(neighbor_port) ] = { 'ip': neighbor_ip, 'port': neighbor_port, 'cost': neighbor_cost, 'holddown': 0 }
 
 for entry in local_table:
   print(entry)
@@ -160,6 +162,7 @@ reader_thread.start()
 
 inf_cost = 100
 sleep_time = 2
+hold_down_timer = 0
 
 # try:
 #   time.sleep(sleep_time)
